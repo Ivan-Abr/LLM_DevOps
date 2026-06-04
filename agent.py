@@ -1,78 +1,16 @@
 import datetime
-from pathlib import Path
-
-import os
 import sys
 import json
 import argparse
 import requests
 from datetime import datetime
 from pathlib import Path
-from dotenv import load_dotenv
-load_dotenv()
-
-# Конфиг
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-MODEL        = "llama-3.3-70b-versatile"
-
-# ГЕНЕРАТОРЫ
-# Каждый генератор как отдельный промпт + имя файла на выходе.
-# Агент вызывает LLM отдельно для каждого файла.
-GENERATORS = {
-    "dockerfile": {
-        "filename": "Dockerfile",
-        "system":   (
-            "You are a DevOps expert. Generate a production-ready Dockerfile. "
-            "Rules: return ONLY the Dockerfile content. "
-            "No markdown fences, no preamble, no explanations. "
-            "Use multi-stage builds where appropriate. Add comments for clarity."
-        ),
-    },
-    "compose": {
-        "filename": "docker-compose.yml",
-        "system":   (
-            "You are a DevOps expert. Generate a docker-compose.yml for local development. "
-            "Rules: return ONLY valid YAML. "
-            "No markdown fences, no preamble, no explanations. "
-            "Include all services the project needs (app, db, cache, etc.). "
-            "Use named volumes, healthchecks, and environment variable placeholders."
-        ),
-    },
-    "gitlab_ci": {
-        "filename": ".gitlab-ci.yml",
-        "system":   (
-            "You are a DevOps expert. Generate a .gitlab-ci.yml CI/CD pipeline. "
-            "Rules: return ONLY valid YAML. "
-            "No markdown fences, no preamble, no explanations. "
-            "Include stages: build, test, deploy. "
-            "Use Docker-in-Docker for build if needed. Add caching."
-        ),
-    },
-    "github_actions": {
-        "filename": ".github/workflows/ci.yml",
-        "system":   (
-            "You are a DevOps expert. Generate a GitHub Actions CI/CD workflow. "
-            "Rules: return ONLY valid YAML. "
-            "No markdown fences, no preamble, no explanations. "
-            "Include jobs: build, test, deploy. Use caching for dependencies."
-        ),
-    },
-    "deploy": {
-        "filename": "deploy.sh",
-        "system":   (
-            "You are a DevOps expert. Generate a bash deployment script. "
-            "Rules: return ONLY the bash script starting with #!/bin/bash. "
-            "No markdown fences, no preamble, no explanations. "
-            "Add: set -euo pipefail. Add comments. Handle errors gracefully."
-        ),
-    },
-}
+from config import GROQ_API_KEY, MODEL, GENERATORS
 
 #Вызов LLM
 def call_llm(system_prompt: str, project_description: str) -> str:
     if not GROQ_API_KEY:
         raise EnvironmentError("GROQ_API_KEY не определен")
-
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
         headers={
@@ -91,13 +29,10 @@ def call_llm(system_prompt: str, project_description: str) -> str:
         timeout=30,
     )
     response.raise_for_status()
-
     content = response.json()["choices"][0]["message"]["content"].strip()
-
     if content.startswith("```"):
         lines = content.splitlines()
         content = "\n".join(l for l in lines if not l.startswith("```")).strip()
-
     return content
 
 # Генерация файла
@@ -115,6 +50,7 @@ def save_file(output_dir: Path, filename: str, content: str) -> Path:
         path.chmod(0o755)
     return path
 
+# Запуск агента
 def run_agent(
     project_description: str,
     platform: str = "github",
@@ -129,21 +65,21 @@ def run_agent(
     print(f"f\n{sep}")
     print(f" DevOps LLM Agent ")
     print(f"{sep}")
-    print(f"  Project  : {project_description}")
-    print(f"  Platform : {platform}")
-    print(f"  Output   : {out.resolve()}/")
-    print(f"  Model    : {MODEL}")
+    print(f"  Проект  : {project_description}")
+    print(f"  Платформа : {platform}")
+    print(f"  Вывод : {out.resolve()}/")
+    print(f"  Модель ЛЛМ : {MODEL}")
     print(f"{sep}\n")
 
     results = []
 
     for i, key in enumerate(keys_to_generate, 1):
         filename = GENERATORS[key]["filename"]
-        print(f"[{i}/{len(keys_to_generate)}] Generating {filename} ...")
+        print(f"{i}. Генерация {filename}")
         try:
             _, content = generate_file(key, project_description)
             path = save_file(out, filename, content)
-            print(f" saved → {path}")
+            print(f" сохранено {path}")
             results.append({"file": filename, "path": str(path), "success": True})
         except Exception as exc:
             print(f" failed: {exc}")
@@ -164,10 +100,9 @@ def run_agent(
     ok = sum(1 for r in results if r["success"])
     total = len(results)
     print(f"\n{sep}")
-    print(f"  Done: {ok}/{total} files generated successfully")
-    print(f"  Manifest → {manifest_path}")
+    print(f"  {ok}/{total} файлов сгенерировано успешно")
+    print(f"  Manifest: {manifest_path}")
     print(f"{sep}\n")
-
     return results
 
 if __name__ == "__main__":
@@ -201,14 +136,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
     if not GROQ_API_KEY:
-        print("Error: GROQ_API_KEY environment variable is not set")
-        print("  export GROQ_API_KEY=your_key_here")
+        print("ОШИБКА: Ключ GROQ_API_KEY не определен")
         sys.exit(1)
-
     results = run_agent(args.description, args.platform, args.output)
-
     failed = [r for r in results if not r["success"]]
     sys.exit(1 if failed else 0)
-
