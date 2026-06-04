@@ -1,0 +1,28 @@
+stages:
+  - generate
+
+variables:
+  PROJECT_DESCRIPTION: "Python Flask REST API with PostgreSQL and Redis"
+  PLATFORM: "gitlab"           # github | gitlab
+  OUTPUT_DIR: "generated"
+
+generate-devops-files:
+  stage: generate
+  image: python:3.11-slim
+  script:
+    - pip install -r requirements.txt
+    - python agent.py "$PROJECT_DESCRIPTION" --platform "$PLATFORM" --output "$OUTPUT_DIR"
+    - echo "===Generated files==="
+    - find "$OUTPUT_DIR" -type f | sort
+    - cat "$OUTPUT_DIR/manifest.json"
+
+  artifacts:
+    name: "devops-files-${CI_PIPELINE_ID}"
+    paths:
+      - generated/
+    when: always
+    expire_in: 1 week
+
+  rules:
+    - when: manual
+      allow_failure: false

@@ -1,0 +1,51 @@
+name: DevOps LLM Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_description:
+        description: "Describe your project"
+        required: true
+        default: "Python Flask REST API with PostgreSQL and Redis"
+      platform:
+        description: "Target CI/CD platform for generated files"
+        required: true
+        default: "github"
+        type: choice
+        options:
+          - github
+          - gitlab
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run DevOps Agent
+        run: |
+          python agent.py \
+            "${{ github.event.inputs.project_description }}" \
+            --platform "${{ github.event.inputs.platform }}" \
+            --output generated
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      - name: Show generated files
+        run: |
+          echo "=== Generated files ==="
+          find generated/ -type f | sort
+          echo ""
+          for f in generated/**/* generated/*; do
+            [ -f "$f" ] && echo "--- $f ---" && cat "$f" && echo ""
+          done
+      - name: Upload generated DevOps files
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: devops-files-${{ github.run_number }}
+          path: generated/
+          retention-days: 30
