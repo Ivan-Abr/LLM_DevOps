@@ -1,0 +1,13 @@
+# Примеры задач для демонстрации агента
+# Каждая строка — готовый аргумент для agent.py или ввод в CI
+
+Check disk usage and list top 5 largest directories in /tmp
+Show memory usage and top 5 memory-hungry processes
+List all running services and their status
+Check if nginx is running, start it if not
+Create a backup of /etc/hosts with a timestamp in the filename
+Show CPU load average for the last 1, 5 and 15 minutes
+Count the number of files in /var/log and show total size
+Find all files modified in the last 24 hours in /tmp
+Show open network ports and which processes are listening
+Check available system updates without installing them
