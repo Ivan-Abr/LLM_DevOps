@@ -5,16 +5,17 @@ import argparse
 import requests
 from datetime import datetime
 from pathlib import Path
-from config import GROQ_API_KEY, MODEL, GENERATORS
+from config import API_KEY, API_URL, MODEL, GENERATORS, validate_credentials
+
 
 #Вызов LLM
 def call_llm(system_prompt: str, project_description: str) -> str:
-    if not GROQ_API_KEY:
-        raise EnvironmentError("GROQ_API_KEY не определен")
+    if not API_KEY:
+        raise EnvironmentError("API_KEY не определен")
     response = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        API_URL,
         headers={
-            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Authorization": f"Bearer {API_KEY}",
             "Content-Type": "application/json",
         },
         json={
@@ -26,7 +27,7 @@ def call_llm(system_prompt: str, project_description: str) -> str:
             "max_tokens": 2048,
             "temperature": 0.2
         },
-        timeout=30,
+        timeout=120,
     )
     response.raise_for_status()
     content = response.json()["choices"][0]["message"]["content"].strip()
@@ -136,9 +137,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    if not GROQ_API_KEY:
-        print("ОШИБКА: Ключ GROQ_API_KEY не определен")
-        sys.exit(1)
+    validate_credentials()
     results = run_agent(args.description, args.platform, args.output)
     failed = [r for r in results if not r["success"]]
     sys.exit(1 if failed else 0)
