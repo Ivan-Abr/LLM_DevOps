@@ -5,7 +5,8 @@ import argparse
 import requests
 from datetime import datetime
 from pathlib import Path
-from config import API_KEY, API_URL, MODEL, GENERATORS, validate_credentials
+from config import API_KEY, API_URL, MODEL, validate_credentials
+from knowledge_base import GENERATORS
 
 
 #Вызов LLM
@@ -37,59 +38,34 @@ def call_llm(system_prompt: str, project_description: str) -> str:
     return content
 
 # Генерация файла
-def generate_file(generator_key: str, project_description: str) -> tuple[str, str]:
-    gen = GENERATORS[generator_key]
-    content = call_llm(gen["system"], project_description)
-    return gen["filename"], content
-
-# Сохранение файла
-def save_file(output_dir: Path, filename: str, content: str) -> Path:
-    path = output_dir / filename
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-    if filename.endswith(".sh"):
-        path.chmod(0o755)
-    return path
-
-# Запуск агента
-def run_agent(
-    project_description: str,
-    platform: str = "github",
-    output_dir: str = "generated"
-) -> list[dict]:
+def generate_from_prompts(prompts: list[dict], output_dir: str = "generated") -> list[dict]:
     out = Path(output_dir)
-    out.mkdir(exist_ok=True)
-    ci_key = "github_actions" if platform == "github" else "gitlab_ci"
-    keys_to_generate = ["dockerfile", "compose", ci_key, "deploy"]
+    out.mkdir(parents=True, exist_ok=True)
 
     sep = "=" * 35
-    print(f"f\n{sep}")
+    print(f"\n{sep}")
     print(f" DevOps LLM Agent ")
     print(f"{sep}")
-    print(f"  Проект  : {project_description}")
-    print(f"  Платформа : {platform}")
-    print(f"  Вывод : {out.resolve()}/")
+    print(f"  Вывод      : {out.resolve()}/")
     print(f"  Модель ЛЛМ : {MODEL}")
     print(f"{sep}\n")
 
     results = []
 
-    for i, key in enumerate(keys_to_generate, 1):
-        filename = GENERATORS[key]["filename"]
+    for i, p in enumerate(prompts, 1):
+        filename = p["filename"]
         print(f"{i}. Генерация {filename}")
         try:
-            _, content = generate_file(key, project_description)
+            content = call_llm(p["system"], p["user"])
             path = save_file(out, filename, content)
-            print(f" сохранено {path}")
+            print(f" Сохранено {path}")
             results.append({"file": filename, "path": str(path), "success": True})
         except Exception as exc:
-            print(f" failed: {exc}")
+            print(f" Ошибка: {exc}")
             results.append({"file": filename, "success": False, "error": str(exc)})
 
     manifest = {
         "timestamp": datetime.now().isoformat(),
-        "project": project_description,
-        "platform": platform,
         "model": MODEL,
         "generated_files": results,
     }
@@ -104,40 +80,84 @@ def run_agent(
     print(f"  {ok}/{total} файлов сгенерировано успешно")
     print(f"  Manifest: {manifest_path}")
     print(f"{sep}\n")
+
     return results
+
+# Сохранение файла
+def save_file(output_dir: Path, filename: str, content: str) -> Path:
+    path = output_dir / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    if filename.endswith(".sh"):
+        path.chmod(0o755)
+    return path
+
+def run_agent(
+        project_description: str,
+        platform: str = "github",
+        output_dir: str = "generated"
+) -> list[dict]:
+    ci_key = "github_actions" if platform == "github" else "gitlab_ci"
+    keys_to_generate = ["dockerfile", "compose", ci_key, "deploy"]
+
+    prompts = []
+    for key in keys_to_generate:
+        prompts.append({
+            "filename": GENERATORS[key]["filename"],
+            "system": GENERATORS[key]["system"],
+            "user": f"Project: {project_description}"
+        })
+
+    return generate_from_prompts(prompts, output_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="DevOps LLM Agent — generates DevOps files from project description",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-    Examples:
-      python agent.py "Python Flask REST API with PostgreSQL and Redis"
-      python agent.py "Spring Boot microservice with MySQL" --platform gitlab
-      python agent.py "Node.js Express API" --output my_project_devops
-            """,
     )
 
+    # Делаем description опциональным, т.к. теперь у нас есть --request
     parser.add_argument(
         "description",
-        help="Natural language project description",
+        nargs="?",
+        help="Natural language project description (игнорируется, если используется --request)",
     )
-
     parser.add_argument(
         "--platform",
         choices=["github", "gitlab"],
         default="github",
         help="Target CI/CD platform (default: github)",
     )
-
     parser.add_argument(
         "--output",
         default="generated",
         help="Output directory for generated files (default: generated/)",
     )
+    parser.add_argument(
+        "--request",
+        help="Путь к JSON файлу с запросом (отменяет ручные CLI аргументы)",
+    )
 
     args = parser.parse_args()
     validate_credentials()
-    results = run_agent(args.description, args.platform, args.output)
-    failed = [r for r in results if not r["success"]]
-    sys.exit(1 if failed else 0)
+
+    try:
+        if args.request:
+            # Новый путь: идем через фабрику промптов
+            from prompt_manager import build_prompts_from_request
+
+            prompts, output_dir = build_prompts_from_request(args.request)
+            results = generate_from_prompts(prompts, output_dir)
+        elif args.description:
+            # Старый путь: парсим только описание из консоли
+            results = run_agent(args.description, args.platform, args.output)
+        else:
+            parser.print_help()
+            sys.exit(1)
+
+        failed = [r for r in results if not r.get("success")]
+        sys.exit(1 if failed else 0)
+
+    except Exception as e:
+        print(f"\nОШИБКА: {e}")
+        sys.exit(1)
