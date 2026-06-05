@@ -55,6 +55,7 @@ GENERATORS = {
 TECH_HINTS = {
     "pom.xml": "Java/Maven project",
     "build.gradle": "Java/Gradle project",
+    "build.gradle.kts": "Kotlin/Gradle project",
     "requirements.txt": "Python project",
     "package.json": "Node.js project",
     "go.mod": "Go project"
