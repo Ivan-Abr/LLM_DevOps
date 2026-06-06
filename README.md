@@ -1,7 +1,12 @@
 Запуск проекта
 
+Генерация скриптов
 ```commandline
 python agent.py "Spring Boot app with PostgreSQL" --platform gitlab
+```
+Проверка скриптов
+```commandline
+python -m verify.verifier generated/
 ```
 
 Примеры описаний проектов:
