@@ -6,7 +6,7 @@ import requests
 from datetime import datetime
 from pathlib import Path
 from config import API_KEY, API_URL, MODEL, validate_credentials
-from knowledge_base import GENERATORS
+from .knowledge_base import GENERATORS
 
 
 #Вызов LLM

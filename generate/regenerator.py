@@ -4,8 +4,8 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-import agent
-from knowledge_base import get_system_prompt
+from . import agent
+from .knowledge_base import get_system_prompt
 
 FILENAME_TO_KEY: dict[str, str] = {
     "Dockerfile":               "dockerfile",
@@ -119,7 +119,7 @@ def run(
             file_path.write_text(fixed, encoding="utf-8")
             if filename.endswith(".sh"):
                 file_path.chmod(0o755)
-            print(f"regenerated → {file_path}\n")
+            print(f"regenerated: {file_path}\n")
             results.append({"file": filename, "success": True})
         except Exception as exc:
             print(f"LLM call failed: {exc}\n")

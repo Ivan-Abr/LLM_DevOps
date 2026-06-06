@@ -3,7 +3,7 @@
 ### Генерация скриптов
 
 ```commandline
-python agent.py "Spring Boot app with PostgreSQL" --platform gitlab
+python -m generate.agent "Spring Boot app with PostgreSQL" --platform gitlab
 ```
 Примеры описаний проектов:
 
@@ -24,15 +24,15 @@ python -m verify.verifier generated/
 
 Базовая регенерация WARN и FAIL
 ```commandline
-python regenerator.py generated/
+python -m generate.regenerator generated/
 ```
 
 Регенерация только для критичных случаев (WARN)
 ```commandline
-python regenerator.py generated/ --only-failed
+python -m generate.regenerator generated/ --only-failed
 ```
 
 Регенерация + перепроверка
 ```commandline
-python regenerator.py generated/ --reverify
+python -m generate.regenerator generated/ --reverify
 ```

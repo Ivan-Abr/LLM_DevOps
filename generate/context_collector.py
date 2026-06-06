@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from knowledge_base import TECH_HINTS
+from .knowledge_base import TECH_HINTS
 
 def collect(project_path: str) -> dict:
     if not project_path or not os.path.exists(project_path):

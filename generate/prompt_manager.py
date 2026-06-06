@@ -1,9 +1,7 @@
 import json
-import argparse
-import sys
-from knowledge_base import get_system_prompt, GENERATORS
-from context_collector import collect
-from agent import generate_file
+
+from .context_collector import collect
+from .knowledge_base import get_system_prompt, GENERATORS
 
 def read_request(request_file: str) -> dict:
     try:
