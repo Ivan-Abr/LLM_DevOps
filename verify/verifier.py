@@ -145,7 +145,7 @@ def run(generated_dir: str = "generated") -> dict:
         f"{count_warn} warned  |  {count_fail} failed  |  "
         f"HIGH violations: {high_total}"
     )
-    print(f"  Report  → {report_path}")
+    print(f"  Report: {report_path}")
     print(f"{sep}\n")
 
     return report
