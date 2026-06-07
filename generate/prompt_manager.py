@@ -23,6 +23,17 @@ def build_user_prompt(description: str, context: dict) -> str:
         prompt += "Existing project context:\n"
         if context.get("tech_hints"):
             prompt += f"- Detected stack: {', '.join(context['tech_hints'])}\n"
+            prompt += (
+                "CRITICAL RULES: You MUST strictly use the build tools corresponding to the Detected Stack. "
+                "For example, if Gradle is detected, DO NOT use Maven (pom.xml) under any circumstances. "
+                "Base all generated files on the exact stack provided.\n"
+            )
+            if "Gradle" in str(context['tech_hints']):
+                prompt += (
+                    "CRITICAL BUILD RULE: You MUST use the Gradle wrapper for all build and test commands. "
+                    "Use './gradlew build' or './gradlew bootJar'. "
+                    "Any use of 'mvn' or 'pom.xml' is a hallucination and will fail the pipeline.\n"
+                )
         if context.get("existing_devops"):
             prompt += f"- Existing DevOps files: {', '.join(context['existing_devops'])}\n"
 

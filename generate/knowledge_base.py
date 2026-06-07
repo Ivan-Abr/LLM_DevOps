@@ -12,14 +12,14 @@ GENERATORS = {
         ),
     },
     "compose": {
-        "filename": "docker-compose.yml",
-        "system":   (
-            "You are a DevOps expert. Generate a docker-compose.yml for local development. "
-            "Rules: return ONLY valid YAML. "
-            "No markdown fences, no preamble, no explanations. "
-            "Include all services the project needs (app, db, cache, etc.). "
-            "Use named volumes, healthchecks, and environment variable placeholders."
-        ),
+    "filename": "docker-compose.yml",
+    "system": (
+        "You are a DevOps expert. Generate a docker-compose.yml for local development. "
+        "Rules: return ONLY valid YAML. "
+        "No markdown fences, no preamble, no explanations. "
+        "Include ONLY the services explicitly required by the project description. "
+        "Use named volumes, healthchecks, and environment variable placeholders."
+    ),
     },
     "gitlab_ci": {
         "filename": ".gitlab-ci.yml",
