@@ -2,5 +2,5 @@
   "description": "Default Kotlin Spring Boot API",
   "platform": "gitlab",
   "project_path": "D:\\SpringProjects\\dm\\demo",
-  "output_dir": "test_generation"
+  "output_dir": "generated"
 }

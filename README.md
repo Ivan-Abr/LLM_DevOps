@@ -205,3 +205,9 @@ python -m generate.regenerator generated/ --only-failed
 ```commandline
 python -m generate.regenerator generated/ --reverify
 ```
+
+### Запуск через LangGraph
+```commandline
+python -m langgraph_agent.runner default_request.json
+python -m langgraph_agent.runner default_request.json 5   # 5 попыток регенерации
+```
