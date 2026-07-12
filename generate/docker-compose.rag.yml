@@ -1,0 +1,14 @@
+services:
+  rag-db:
+    image: pgvector/pgvector:pg16
+    container_name: devops-rag-db
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devops_rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - rag_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+volumes:
+  rag_pgdata:

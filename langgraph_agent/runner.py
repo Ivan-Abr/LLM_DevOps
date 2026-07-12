@@ -1,5 +1,7 @@
 import sys
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
 from .graph import build_graph
 from .state import AgentState
 
