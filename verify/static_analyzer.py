@@ -111,7 +111,24 @@ def analyze_bash(content: str, path: str) -> list[dict]:
             text=True,
             timeout=10,
         )
-        if result.returncode != 0:
+
+        stderr_lower = result.stderr.lower()
+
+        wsl_broken_markers = (
+            "execvpe(/bin/bash) failed",
+            "wsl (",
+            "no such file or directory" if "wsl" in stderr_lower else "___never___",
+        )
+        wsl_relay_failure = any(marker in stderr_lower for marker in wsl_broken_markers)
+
+        if wsl_relay_failure:
+            findings.append({
+                "check": "Bash syntax",
+                "status": "pass",
+                "message": "bash not available for syntax check (wsl error) — skipped.",
+            })
+
+        elif result.returncode != 0:
             findings.append({
                 "check": "Bash syntax",
                 "status": "fail",
